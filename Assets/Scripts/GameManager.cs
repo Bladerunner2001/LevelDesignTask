@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -20,10 +21,13 @@ public class GameManager : MonoBehaviour
     }
 
     public event Action<int, int> CoinsChanged;
+    public event Action LevelCompleted;
 
     public int CoinsCollected { get; private set; }
     public int TotalCoins { get; private set; }
     public Checkpoint CurrentCheckpoint { get; private set; }
+    public bool IsLevelComplete { get; private set; }
+    public float LevelTime { get; private set; }
 
     private void Awake()
     {
@@ -39,6 +43,12 @@ public class GameManager : MonoBehaviour
     {
         if (instance == this)
             instance = null;
+    }
+
+    private void Update()
+    {
+        if (!IsLevelComplete)
+            LevelTime += Time.deltaTime;
     }
 
     public void RegisterCoin()
@@ -63,5 +73,19 @@ public class GameManager : MonoBehaviour
 
         CurrentCheckpoint = checkpoint;
         CurrentCheckpoint.SetActive(true);
+    }
+
+    public void CompleteLevel()
+    {
+        if (IsLevelComplete)
+            return;
+
+        IsLevelComplete = true;
+        LevelCompleted?.Invoke();
+    }
+
+    public void RestartLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

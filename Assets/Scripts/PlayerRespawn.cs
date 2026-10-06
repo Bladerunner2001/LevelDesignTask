@@ -8,6 +8,8 @@ public class PlayerRespawn : MonoBehaviour
     [SerializeField] private float killHeight = -20f;
 
     private PlayerController player;
+    private PlayerHealth health;
+    private CameraController cameraController;
     private InputAction respawnAction;
     private Vector3 startPosition;
     private Quaternion startRotation;
@@ -15,6 +17,7 @@ public class PlayerRespawn : MonoBehaviour
     private void Awake()
     {
         player = GetComponent<PlayerController>();
+        health = GetComponent<PlayerHealth>();
         startPosition = transform.position;
         startRotation = transform.rotation;
 
@@ -23,12 +26,32 @@ public class PlayerRespawn : MonoBehaviour
         respawnAction.AddBinding("<Gamepad>/select");
     }
 
+    private void Start()
+    {
+        cameraController = FindAnyObjectByType<CameraController>();
+
+        StartPoint startPoint = FindAnyObjectByType<StartPoint>();
+        if (startPoint != null)
+        {
+            Transform point = startPoint.SpawnPoint;
+            startPosition = point.position;
+            startRotation = Quaternion.Euler(0f, point.eulerAngles.y, 0f);
+            player.Teleport(startPosition, startRotation);
+        }
+
+        if (cameraController != null)
+            cameraController.SnapBehindTarget();
+    }
+
     private void OnEnable() => respawnAction.Enable();
     private void OnDisable() => respawnAction.Disable();
     private void OnDestroy() => respawnAction.Dispose();
 
     private void Update()
     {
+        if (GameManager.Instance.IsLevelComplete)
+            return;
+
         if (transform.position.y < killHeight || respawnAction.WasPressedThisFrame())
             Respawn();
     }
@@ -46,5 +69,10 @@ public class PlayerRespawn : MonoBehaviour
         {
             player.Teleport(startPosition, startRotation);
         }
+
+        if (health != null)
+            health.ResetHealth();
+        if (cameraController != null)
+            cameraController.SnapBehindTarget();
     }
 }

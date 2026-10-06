@@ -38,6 +38,7 @@ public class PlayerController : MonoBehaviour
     private float lastGroundedTime = float.NegativeInfinity;
     private float lastJumpPressedTime = float.NegativeInfinity;
 
+    public bool InputEnabled { get; set; } = true;
     public bool IsGrounded => controller.isGrounded;
     public Vector3 Velocity => horizontalVelocity + Vector3.up * verticalVelocity;
 
@@ -97,7 +98,7 @@ public class PlayerController : MonoBehaviour
 
         if (grounded)
             lastGroundedTime = Time.time;
-        if (jumpAction.WasPressedThisFrame())
+        if (InputEnabled && jumpAction.WasPressedThisFrame())
             lastJumpPressedTime = Time.time;
 
         UpdateHorizontal(grounded, dt);
@@ -123,9 +124,18 @@ public class PlayerController : MonoBehaviour
         lastJumpPressedTime = float.NegativeInfinity;
     }
 
+    public void ApplyKnockback(Vector3 velocity)
+    {
+        horizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        verticalVelocity = velocity.y;
+        lastGroundedTime = float.NegativeInfinity;
+    }
+
     private void UpdateHorizontal(bool grounded, float dt)
     {
-        Vector2 input = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
+        Vector2 input = InputEnabled
+            ? Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f)
+            : Vector2.zero;
 
         Vector3 forward = Vector3.forward;
         Vector3 right = Vector3.right;

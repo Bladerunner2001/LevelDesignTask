@@ -1,11 +1,13 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+// Keeps the camera where it was placed in the Scene view relative to the target,
+// and lets the player orbit around that placement with the mouse / right stick.
 public class CameraController : MonoBehaviour
 {
     [Header("Target")]
     [SerializeField] private Transform target;
-    [Tooltip("Offset from the target's pivot that the camera orbits around (e.g. head height).")]
+    [Tooltip("Point on the target the camera orbits around (e.g. head height).")]
     [SerializeField] private Vector3 targetOffset = new Vector3(0f, 1.5f, 0f);
     [SerializeField] private float followSmoothTime = 0.05f;
 
@@ -13,14 +15,18 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float mouseSensitivity = 0.15f;
     [SerializeField] private float gamepadSensitivity = 180f;
     [SerializeField] private bool invertY = false;
-    [SerializeField] private float minPitch = -30f;
-    [SerializeField] private float maxPitch = 70f;
+    [Tooltip("How many degrees the player can tilt the view up from where the camera was placed.")]
+    [SerializeField] private float maxLookUp = 40f;
+    [Tooltip("How many degrees the player can tilt the view down from where the camera was placed.")]
+    [SerializeField] private float maxLookDown = 50f;
 
-    [Header("Distance")]
-    [SerializeField] private float distance = 6f;
-    [SerializeField] private float minDistance = 2f;
-    [SerializeField] private float maxDistance = 12f;
-    [SerializeField] private float zoomSpeed = 0.01f;
+    [Header("Zoom")]
+    [SerializeField] private bool allowZoom = true;
+    [Tooltip("Smallest zoom, as a multiple of the placed distance.")]
+    [SerializeField] private float minZoom = 0.5f;
+    [Tooltip("Largest zoom, as a multiple of the placed distance.")]
+    [SerializeField] private float maxZoom = 2f;
+    [SerializeField] private float zoomSpeed = 0.002f;
 
     [Header("Collision")]
     [SerializeField] private LayerMask collisionMask = ~0;
@@ -33,8 +39,11 @@ public class CameraController : MonoBehaviour
     private InputAction lookGamepadAction;
     private InputAction zoomAction;
 
+    private Vector3 placedOffset;
+    private Quaternion placedRotation = Quaternion.identity;
     private float yaw;
-    private float pitch = 20f;
+    private float pitch;
+    private float zoom = 1f;
     private Vector3 pivot;
     private Vector3 pivotVelocity;
 
@@ -44,9 +53,15 @@ public class CameraController : MonoBehaviour
         lookGamepadAction = new InputAction("LookGamepad", InputActionType.Value, "<Gamepad>/rightStick");
         zoomAction = new InputAction("Zoom", InputActionType.Value, "<Mouse>/scroll/y");
 
-        yaw = transform.eulerAngles.y;
         if (target != null)
+        {
+            yaw = target.eulerAngles.y;
             pivot = target.position + targetOffset;
+
+            Quaternion inverseYaw = Quaternion.Inverse(Quaternion.Euler(0f, yaw, 0f));
+            placedOffset = inverseYaw * (transform.position - pivot);
+            placedRotation = inverseYaw * transform.rotation;
+        }
     }
 
     private void OnEnable()
@@ -98,23 +113,39 @@ public class CameraController : MonoBehaviour
 
         yaw += look.x;
         pitch += invertY ? look.y : -look.y;
-        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+        pitch = Mathf.Clamp(pitch, -maxLookUp, maxLookDown);
 
-        distance = Mathf.Clamp(distance - zoomAction.ReadValue<float>() * zoomSpeed, minDistance, maxDistance);
+        if (allowZoom)
+            zoom = Mathf.Clamp(zoom - zoomAction.ReadValue<float>() * zoomSpeed, minZoom, maxZoom);
 
         pivot = Vector3.SmoothDamp(pivot, target.position + targetOffset, ref pivotVelocity, followSmoothTime);
 
-        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-        Vector3 direction = rotation * Vector3.back;
+        Quaternion orbit = Quaternion.Euler(pitch, yaw, 0f);
+        Vector3 offset = orbit * (placedOffset * zoom);
 
-        float actualDistance = distance;
-        if (Physics.SphereCast(pivot, collisionRadius, direction, out RaycastHit hit, distance, collisionMask, QueryTriggerInteraction.Ignore)
-            && !hit.transform.IsChildOf(target))
+        float offsetLength = offset.magnitude;
+        if (offsetLength > 0.01f)
         {
-            actualDistance = hit.distance;
+            Vector3 direction = offset / offsetLength;
+            if (Physics.SphereCast(pivot, collisionRadius, direction, out RaycastHit hit, offsetLength, collisionMask, QueryTriggerInteraction.Ignore)
+                && !hit.transform.IsChildOf(target))
+            {
+                offset = direction * hit.distance;
+            }
         }
 
-        transform.SetPositionAndRotation(pivot + direction * actualDistance, rotation);
+        transform.SetPositionAndRotation(pivot + offset, orbit * placedRotation);
+    }
+
+    public void SnapBehindTarget()
+    {
+        if (target == null)
+            return;
+
+        yaw = target.eulerAngles.y;
+        pitch = 0f;
+        pivot = target.position + targetOffset;
+        pivotVelocity = Vector3.zero;
     }
 
     private static void SetCursorLocked(bool locked)
