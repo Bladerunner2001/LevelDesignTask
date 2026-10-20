@@ -2614,7 +2614,6 @@ GameObject:
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
-  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2747,7 +2746,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 78f3ddd3c683cc14bbd60772b714be82, type: 3}
   m_Name: 
@@ -2764,35 +2763,6 @@ MonoBehaviour:
   minZoom: 0.5
   maxZoom: 2
   zoomSpeed: 0.01
-  collisionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  collisionRadius: 0.25
-  lockCursor: 1
---- !u!114 &330585549
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 78f3ddd3c683cc14bbd60772b714be82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  target: {fileID: 0}
-  targetOffset: {x: 0, y: 1.5, z: 0}
-  followSmoothTime: 0.05
-  mouseSensitivity: 0.15
-  gamepadSensitivity: 180
-  invertY: 0
-  maxLookUp: 40
-  maxLookDown: 50
-  allowZoom: 1
-  minZoom: 0.5
-  maxZoom: 2
-  zoomSpeed: 0.002
   collisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
